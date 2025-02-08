@@ -51,14 +51,14 @@ using namespace std;
 
 typedef pcl::PointXYZI  PointType;
 
-extern const string pointCloudTopic = "/mid/points";
-extern const string imuTopic = "/imu/data";
+extern const string pointCloudTopic = "/carla/ego_vehicle/lidar_filtered";
+extern const string imuTopic = "/carla/ego_vehicle/imu";
 
 // Save pcd
 extern const string fileDirectory = "/tmp/";
 
 // Using velodyne cloud "ring" channel for image projection (other lidar may have different name for this channel, change "PointXYZIR" below)
-extern const bool useCloudRing = false; // if true, ang_res_y and ang_bottom are not used
+extern const bool useCloudRing = true; // if true, ang_res_y and ang_bottom are not used
 
 // VLP-16
 extern const int N_SCAN = 16;

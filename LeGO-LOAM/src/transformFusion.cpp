@@ -79,7 +79,7 @@ public:
         map_2_camera_init_Trans.child_frame_id_ = "camera_init";
 
         camera_2_base_link_Trans.frame_id_ = "camera";
-        camera_2_base_link_Trans.child_frame_id_ = "base_link";
+        camera_2_base_link_Trans.child_frame_id_ = "ego_vehicle";
 
         for (int i = 0; i < 6; ++i)
         {
