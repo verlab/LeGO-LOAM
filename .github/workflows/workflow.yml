@@ -47,6 +47,10 @@ jobs:
           ros-noetic-geometry-msgs \
           ros-noetic-nav-msgs \
           ros-noetic-image-transport
+
+      - name: Correct voxel_grid.h (Eigen::Index)
+        run: |
+          sudo sed -i 's/Eigen::Index/int/g' /usr/include/pcl-1.10/pcl/filters/voxel_grid.h
           
       - name: Build workspace
         shell: bash
