@@ -1,0 +1,62 @@
+name: Build ROS Package
+
+on:
+  pull_request:
+    branches: [main, dev]
+  push:
+    branches: [main, dev]
+  workflow_dispatch:
+
+jobs:
+  ros_build:
+    runs-on: ubuntu-latest
+    container:
+      image: ros:noetic-ros-base-focal
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install GTSAM
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          echo "keyboard-configuration keyboard-configuration/layoutcode string us" | sudo debconf-set-selections
+          echo "keyboard-configuration keyboard-configuration/modelcode string pc105" | sudo debconf-set-selections
+          sudo apt update
+          sudo apt install -y git wget unzip
+          mkdir -p ~/Downloads
+          wget -O ~/Downloads/gtsam.zip https://github.com/borglab/gtsam/archive/4.0.0-alpha2.zip
+          cd ~/Downloads/ && unzip gtsam.zip -d ~/Downloads/
+          cd ~/Downloads/gtsam-4.0.0-alpha2/
+          mkdir build && cd build
+          cmake ..
+          sudo make install
+      
+      - name: Install catkin tools and deps
+        run: |
+          sudo apt install -y git python3-catkin-tools python3-pip
+          sudo apt install -y \
+          ros-noetic-roscpp \
+          ros-noetic-rospy \
+          ros-noetic-tf \
+          ros-noetic-pcl-ros \
+          ros-noetic-pcl-conversions \
+          ros-noetic-cv-bridge \
+          ros-noetic-std-msgs \
+          ros-noetic-sensor-msgs \
+          ros-noetic-geometry-msgs \
+          ros-noetic-nav-msgs \
+          ros-noetic-image-transport
+          
+      - name: Build workspace
+        shell: bash
+        run: |
+          source /opt/ros/noetic/setup.bash
+          mkdir -p ~/catkin_ws/src
+          cp -r . ~/catkin_ws/src/
+          cd ~/catkin_ws
+          rosdep update
+          rosdep install --from-paths src --ignore-src -r -y
+          catkin init
+          catkin config --extend /opt/ros/noetic
+          catkin build
