@@ -13,17 +13,21 @@ This repository contains code for a lightweight and ground optimized lidar odome
 
 An updated lidar-initial odometry package, [LIO-SAM](https://github.com/TixiaoShan/LIO-SAM), has been open-sourced and available for testing.
 
-## Dependency
+## Dependencies
 
 - [ROS](http://wiki.ros.org/ROS/Installation) (tested with indigo, kinetic, and melodic)
 - [gtsam](https://github.com/borglab/gtsam/releases) (Georgia Tech Smoothing and Mapping library, 4.0.0-alpha2)
-  ```
+  ```bash
   wget -O ~/Downloads/gtsam.zip https://github.com/borglab/gtsam/archive/4.0.0-alpha2.zip
   cd ~/Downloads/ && unzip gtsam.zip -d ~/Downloads/
   cd ~/Downloads/gtsam-4.0.0-alpha2/
   mkdir build && cd build
   cmake ..
   sudo make install
+  ```
+- [yaml-cpp](https://github.com/jbeder/yaml-cpp) (YAML configuration file parsing)
+  ```bash
+  sudo apt-get install libyaml-cpp-dev
   ```
 
 ## Compile
@@ -58,49 +62,125 @@ Lidar odometry performs two-step Levenberg Marquardt optimization to get 6D tran
     <img src="/LeGO-LOAM/launch/odometry.jpg" alt="drawing" width="400"/>
 </p>
 
-## New Lidar
+## LiDAR Configuration System
 
-The key thing to adapt the code to a new sensor is making sure the point cloud can be properly projected to an range image and ground can be correctly detected. For example, VLP-16 has a angular resolution of 0.2&deg; and 2&deg; along two directions. It has 16 beams. The angle of the bottom beam is -15&deg;. Thus, the parameters in "utility.h" are listed as below. When you implement new sensor, make sure that the ground_cloud has enough points for matching. Before you post any issues, please read this.
+This repository now uses a YAML-based configuration system for different LiDAR sensors, following ROS best practices. Instead of hardcoded constants, sensor parameters are defined in configuration files.
 
+### Supported LiDAR Sensors
+
+The following LiDAR configurations are included:
+
+- **VLP-16**: `config/vlp16.yaml` - Velodyne VLP-16 Puck
+- **LSLidar C32W**: `config/lslidar_c32w.yaml` - LSLidar 32-channel (default)
+- **HDL-32E**: `config/hdl32e.yaml` - Velodyne HDL-32E
+- **VLS-128**: `config/vls128.yaml` - Velodyne VLS-128
+- **Ouster OS1-16**: `config/ouster_os1_16.yaml` - Ouster OS1-16
+- **Ouster OS1-64**: `config/ouster_os1_64.yaml` - Ouster OS1-64
+
+### Configuration File Structure
+
+Each configuration file contains the following parameters:
+
+```yaml
+# LiDAR model name
+model: "VLP-16"
+
+# Point cloud and IMU topic configuration
+topics:
+  point_cloud: "/velodyne_points"
+  imu: "/imu/data"
+
+# Scan configuration
+scan:
+  N_SCAN: 16                    # Number of scan lines
+  Horizon_SCAN: 1800           # Number of points per scan line
+  ang_res_x: 0.2               # Horizontal angular resolution (degrees)
+  ang_res_y: 2.0               # Vertical angular resolution (degrees) 
+  ang_bottom: 15.1             # Bottom beam angle offset (degrees)
+  groundScanInd: 7             # Ground scan index for ground detection
+
+# Ring channel configuration
+useCloudRing: false            # Use ring channel for projection if available
+
+# Other parameters...
 ```
-extern const int N_SCAN = 16;
-extern const int Horizon_SCAN = 1800;
-extern const float ang_res_x = 0.2;
-extern const float ang_res_y = 2.0;
-extern const float ang_bottom = 15.0;
-extern const int groundScanInd = 7;
-```
 
-Another example for Velodyne HDL-32e range image projection:
+### Adding New LiDAR Sensors
 
-```
-extern const int N_SCAN = 32;
-extern const int Horizon_SCAN = 1800;
-extern const float ang_res_x = 360.0/Horizon_SCAN;
-extern const float ang_res_y = 41.333/float(N_Scan-1);
-extern const float ang_bottom = 30.666666;
-extern const int groundScanInd = 20;
-```
+To add support for a new LiDAR sensor:
 
-**New**: a new **useCloudRing** flag has been added to help with point cloud projection (i.e., VLP-32C, VLS-128). Velodyne point cloud has "ring" channel that directly gives the point row id in a range image. Other lidars may have a same type of channel, i.e., "r" in Ouster. If you are using a non-Velodyne lidar but it has a similar "ring" channel, you can change the PointXYZIR definition in utility.h and the corresponding code in imageProjection.cpp.
+1. Create a new YAML configuration file in the `config/` directory
+2. Define all required parameters following the existing structure
+3. Ensure the point cloud can be properly projected to a range image
+4. Verify that ground detection works with sufficient points
 
-For **KITTI** users, if you want to use our algorithm with  **HDL-64e**, you need to write your own implementation for such projection. If the point cloud is not projected properly, you will lose many points and performance.
+**Important**: When implementing a new sensor, make sure that the `ground_cloud` has enough points for matching. The key is ensuring proper range image projection and ground detection.
 
-If you are using your lidar with an IMU, make sure your IMU is aligned properly with the lidar. The algorithm uses IMU data to correct the point cloud distortion that is cause by sensor motion. If the IMU is not aligned properly, the usage of IMU data will deteriorate the result. Ouster lidar IMU is not supported in the package as LeGO-LOAM needs a 9-DOF IMU.
+### Ring Channel Support
+
+The **useCloudRing** flag helps with point cloud projection for sensors with ring channels:
+- Velodyne sensors: Use the "ring" channel
+- Ouster sensors: Use the "ring" or "r" channel  
+- Other sensors: May have similar ring/row identification channels
+
+If using a non-Velodyne LiDAR with a ring channel, you may need to modify the `PointXYZIR` definition in `utility.h` and corresponding code in `imageProjection.cpp`.
+
+### IMU Integration
+
+If using your LiDAR with an IMU:
+- Ensure proper alignment between LiDAR and IMU
+- The algorithm uses IMU data to correct point cloud distortion from sensor motion
+- Misaligned IMU data will deteriorate results
+- **Note**: Ouster LiDAR IMU is not fully supported (LeGO-LOAM requires 9-DOF IMU)
 
 ## Run the package
 
-1. Run the launch file:
-```
+### 1. Basic Usage
+
+Run with default configuration (LSLidar C32W):
+```bash
 roslaunch lego_loam run.launch
 ```
-Notes: The parameter "/use_sim_time" is set to "true" for simulation, "false" to real robot usage.
 
-2. Play existing bag files:
+### 2. Select LiDAR Configuration
+
+Run with a specific LiDAR configuration:
+```bash
+# For VLP-16
+roslaunch lego_loam run.launch lidar_config:=vlp16
+
+# For HDL-32E
+roslaunch lego_loam run.launch lidar_config:=hdl32e
+
+# For Ouster OS1-16
+roslaunch lego_loam run.launch lidar_config:=ouster_os1_16
 ```
+
+### 3. Custom Configuration File
+
+Use a custom configuration file:
+```bash
+roslaunch lego_loam run.launch config_file:=/path/to/your/config.yaml
+```
+
+### 4. Example Usage with Bag Files
+
+Play existing bag files with appropriate LiDAR configuration:
+```bash
+# For VLP-16 data
+roslaunch lego_loam run.launch lidar_config:=vlp16
 rosbag play *.bag --clock --topic /velodyne_points /imu/data
+
+# For LSLidar data  
+roslaunch lego_loam run.launch lidar_config:=lslidar_c32w
+rosbag play *.bag --clock --topic /mid/points /imu/imu_and_mag
 ```
-Notes: Though /imu/data is optinal, it can improve estimation accuracy greatly if provided. Some sample bags can be downloaded from [here](https://github.com/RobustFieldAutonomyLab/jackal_dataset_20170608). 
+
+**Notes**: 
+- The parameter `/use_sim_time` is set to "true" for simulation, "false" for real robot usage
+- IMU data is optional but greatly improves estimation accuracy when provided
+- Sample bags can be downloaded from [here](https://github.com/RobustFieldAutonomyLab/jackal_dataset_20170608)
+- Topic names are automatically configured based on the selected LiDAR configuration 
 
 ## New data-set
 
@@ -141,3 +221,4 @@ An optimized version of LeGO-LOAM can be found [here](https://github.com/faconti
     + To convert a multi-process application into a single-process / multi-threading one; this makes the algorithm more deterministic and slightly faster.
     + To make it easier and faster to work with rosbags: processing a rosbag should be done at maximum speed allowed by the CPU and in a deterministic way.
     + As a consequence of the previous point, creating unit and regression tests will be easier.
+
