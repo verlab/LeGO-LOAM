@@ -1,0 +1,34 @@
+# VLP-16 LiDAR Configuration
+# Velodyne VLP-16 Puck specifications
+
+# LiDAR model name
+model: "VLP-16"
+
+# Point cloud and IMU topic configuration
+topics:
+  point_cloud: "/velodyne_points"
+  imu: "/imu/data"
+
+# Scan configuration
+scan:
+  N_SCAN: 16                    # Number of scan lines
+  Horizon_SCAN: 1800           # Number of points per scan line
+  ang_res_x: 0.2               # Horizontal angular resolution (degrees)
+  ang_res_y: 2.0               # Vertical angular resolution (degrees) 
+  ang_bottom: 15.1             # Bottom beam angle offset (degrees)
+  groundScanInd: 7             # Ground scan index for ground detection
+
+# Ring channel configuration
+useCloudRing: false            # Use ring channel for projection if available
+
+# File output configuration
+fileDirectory: "/tmp/"         # Directory for saving PCD files
+
+# Sensor mounting configuration
+sensorMountAngle: 0.0          # Sensor mount angle (degrees)
+sensorMinimumRange: 1.0        # Minimum sensor range (meters)
+
+# Processing parameters
+scanPeriod: 0.1                # Scan period (seconds)
+systemDelay: 0                 # System delay compensation
+imuQueLength: 200              # IMU queue length for processing

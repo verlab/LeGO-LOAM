@@ -24,6 +24,7 @@ find_package(GTSAM REQUIRED QUIET)
 find_package(PCL REQUIRED QUIET)
 find_package(OpenCV REQUIRED QUIET)
 find_package(Boost REQUIRED COMPONENTS timer thread serialization chrono)
+find_package(yaml-cpp REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include
@@ -46,16 +47,20 @@ link_directories(
 	${GTSAM_LIBRARY_DIRS}
 )
 
+# Create utility library
+add_library(lego_loam_utility src/utility.cpp)
+target_link_libraries(lego_loam_utility ${catkin_LIBRARIES} yaml-cpp)
+
 add_executable(imageProjection src/imageProjection.cpp)
 add_dependencies(imageProjection ${catkin_EXPORTED_TARGETS} cloud_msgs_gencpp)
-target_link_libraries(imageProjection ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
+target_link_libraries(imageProjection lego_loam_utility ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} yaml-cpp)
 
 add_executable(featureAssociation src/featureAssociation.cpp)
 add_dependencies(featureAssociation ${catkin_EXPORTED_TARGETS} cloud_msgs_gencpp)
-target_link_libraries(featureAssociation ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
+target_link_libraries(featureAssociation lego_loam_utility ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} yaml-cpp)
 
 add_executable(mapOptmization src/mapOptmization.cpp)
-target_link_libraries(mapOptmization ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam)
+target_link_libraries(mapOptmization lego_loam_utility ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam yaml-cpp)
 
 add_executable(transformFusion src/transformFusion.cpp)
-target_link_libraries(transformFusion ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
+target_link_libraries(transformFusion lego_loam_utility ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} yaml-cpp)

@@ -44,6 +44,7 @@
 #include <array>
 #include <thread>
 #include <mutex>
+#include <yaml-cpp/yaml.h>
 
 #define PI 3.14159265
 
@@ -51,98 +52,88 @@ using namespace std;
 
 typedef pcl::PointXYZI  PointType;
 
-extern const string pointCloudTopic = "/mid/points";
-extern const string imuTopic = "/imu/imu_and_mag";
+// LiDAR Configuration Structure
+struct LidarConfig {
+    // Model information
+    string model;
+    
+    // Topic configuration
+    string pointCloudTopic;
+    string imuTopic;
+    
+    // Scan parameters
+    int N_SCAN;
+    int Horizon_SCAN;
+    float ang_res_x;
+    float ang_res_y;
+    float ang_bottom;
+    int groundScanInd;
+    
+    // Ring channel configuration
+    bool useCloudRing;
+    
+    // File output
+    string fileDirectory;
+    
+    // Sensor mounting
+    float sensorMountAngle;
+    float sensorMinimumRange;
+    
+    // Processing parameters
+    float scanPeriod;
+    int systemDelay;
+    int imuQueLength;
+};
 
-// Save pcd
-extern const string fileDirectory = "/tmp/";
+// Global configuration instance
+extern LidarConfig lidarConfig;
 
-// Using lidar "ring" channel for image projection (LSLidar C32W has ring field)
-extern const bool useCloudRing = true; // if true, ang_res_y and ang_bottom are not used
+// Configuration loading function
+bool loadLidarConfig(const string& configFile);
 
-// VLP-16
-// extern const int N_SCAN = 16;
-// extern const int Horizon_SCAN = 1800;
-// extern const float ang_res_x = 0.2;
-// extern const float ang_res_y = 2.0;
-// extern const float ang_bottom = 15.0+0.1;
-// extern const int groundScanInd = 7;
+// Legacy external variables for backward compatibility
+extern string pointCloudTopic;
+extern string imuTopic;
+extern string fileDirectory;
+extern bool useCloudRing;
+extern int N_SCAN;
+extern int Horizon_SCAN;
+extern float ang_res_x;
+extern float ang_res_y;
+extern float ang_bottom;
+extern int groundScanInd;
+extern float sensorMountAngle;
+extern float sensorMinimumRange;
+extern float scanPeriod;
+extern int systemDelay;
+extern int imuQueLength;
 
-// LSLidar C32W
-extern const int N_SCAN = 32;
-extern const int Horizon_SCAN = 1800;
-extern const float ang_res_x = 0.2;
-extern const float ang_res_y = 70.0/float(N_SCAN-1);  // 70° FOV / 31 intervals = ~2.26°
-extern const float ang_bottom = 55.0;  // bottom beam at -55°, so offset is 55°
-extern const int groundScanInd = 20;
-
-// HDL-32E
-// extern const int N_SCAN = 32;
-// extern const int Horizon_SCAN = 1800;
-// extern const float ang_res_x = 360.0/float(Horizon_SCAN);
-// extern const float ang_res_y = 41.33/float(N_SCAN-1);
-// extern const float ang_bottom = 30.67;
-// extern const int groundScanInd = 20;
-
-// VLS-128
-// extern const int N_SCAN = 128;
-// extern const int Horizon_SCAN = 1800;
-// extern const float ang_res_x = 0.2;
-// extern const float ang_res_y = 0.3;
-// extern const float ang_bottom = 25.0;
-// extern const int groundScanInd = 10;
-
-// Ouster users may need to uncomment line 159 in imageProjection.cpp
-// Usage of Ouster imu data is not fully supported yet (LeGO-LOAM needs 9-DOF IMU), please just publish point cloud data
-// Ouster OS1-16
-// extern const int N_SCAN = 16;
-// extern const int Horizon_SCAN = 1024;
-// extern const float ang_res_x = 360.0/float(Horizon_SCAN);
-// extern const float ang_res_y = 33.2/float(N_SCAN-1);
-// extern const float ang_bottom = 16.6+0.1;
-// extern const int groundScanInd = 7;
-
-// Ouster OS1-64
-// extern const int N_SCAN = 64;
-// extern const int Horizon_SCAN = 1024;
-// extern const float ang_res_x = 360.0/float(Horizon_SCAN);
-// extern const float ang_res_y = 33.2/float(N_SCAN-1);
-// extern const float ang_bottom = 16.6+0.1;
-// extern const int groundScanInd = 15;
-
-extern const bool loopClosureEnableFlag = true;
-extern const double mappingProcessInterval = 0.3;
-
-extern const float scanPeriod = 0.1;
-extern const int systemDelay = 0;
-extern const int imuQueLength = 200;
-
-extern const float sensorMinimumRange = 1.0;
-extern const float sensorMountAngle = 0.0;
-extern const float segmentTheta = 60.0/180.0*M_PI; // decrese this value may improve accuracy
-extern const int segmentValidPointNum = 5;
-extern const int segmentValidLineNum = 3;
-extern const float segmentAlphaX = ang_res_x / 180.0 * M_PI;
-extern const float segmentAlphaY = ang_res_y / 180.0 * M_PI;
+extern const bool loopClosureEnableFlag;
+extern const double mappingProcessInterval;
+extern const float segmentTheta; // decrese this value may improve accuracy
+extern const int segmentValidPointNum;
+extern const int segmentValidLineNum;
+extern float segmentAlphaX; // computed after config load
+extern float segmentAlphaY; // computed after config load
 
 
-extern const int edgeFeatureNum = 2;
-extern const int surfFeatureNum = 4;
-extern const int sectionsTotal = 6;
-extern const float edgeThreshold = 0.1;
-extern const float surfThreshold = 0.1;
-extern const float nearestFeatureSearchSqDist = 25;
+extern const int edgeFeatureNum;
+extern const int surfFeatureNum;
+extern const int sectionsTotal;
+extern const float edgeThreshold;
+extern const float surfThreshold;
+extern const float nearestFeatureSearchSqDist;
 
 
 // Mapping Params
-extern const float surroundingKeyframeSearchRadius = 50.0; // key frame that is within n meters from current pose will be considerd for scan-to-map optimization (when loop closure disabled)
-extern const int   surroundingKeyframeSearchNum = 50; // submap size (when loop closure enabled)
+extern const float surroundingKeyframeSearchRadius; // key frame that is within n meters from current pose will be considerd for scan-to-map optimization (when loop closure disabled)
+extern const int   surroundingKeyframeSearchNum; // submap size (when loop closure enabled)
 // history key frames (history submap for loop closure)
-extern const float historyKeyframeSearchRadius = 7.0; // key frame that is within n meters from current pose will be considerd for loop closure
-extern const int   historyKeyframeSearchNum = 25; // 2n+1 number of hostory key frames will be fused into a submap for loop closure
-extern const float historyKeyframeFitnessScore = 0.3; // the smaller the better alignment
+extern const float historyKeyframeSearchRadius; // key frame that is within n meters from current pose will be considerd for loop closure
+extern const int   historyKeyframeSearchNum; // 2n+1 number of hostory key frames will be fused into a submap for loop closure
+extern const float historyKeyframeFitnessScore; // the smaller the better alignment
 
-extern const float globalMapVisualizationSearchRadius = 500.0; // key frames with in n meters will be visualized
+extern const float globalMapVisualizationSearchRadius; // key frames with in n meters will be visualized
 
 
 struct smoothness_t{ 

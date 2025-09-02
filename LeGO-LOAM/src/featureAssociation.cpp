@@ -104,30 +104,30 @@ private:
     float imuAngularRotationXLast, imuAngularRotationYLast, imuAngularRotationZLast;
     float imuAngularFromStartX, imuAngularFromStartY, imuAngularFromStartZ;
 
-    double imuTime[imuQueLength];
-    float imuRoll[imuQueLength];
-    float imuPitch[imuQueLength];
-    float imuYaw[imuQueLength];
+    std::vector<double> imuTime;
+    std::vector<float> imuRoll;
+    std::vector<float> imuPitch;
+    std::vector<float> imuYaw;
 
-    float imuAccX[imuQueLength];
-    float imuAccY[imuQueLength];
-    float imuAccZ[imuQueLength];
+    std::vector<float> imuAccX;
+    std::vector<float> imuAccY;
+    std::vector<float> imuAccZ;
 
-    float imuVeloX[imuQueLength];
-    float imuVeloY[imuQueLength];
-    float imuVeloZ[imuQueLength];
+    std::vector<float> imuVeloX;
+    std::vector<float> imuVeloY;
+    std::vector<float> imuVeloZ;
 
-    float imuShiftX[imuQueLength];
-    float imuShiftY[imuQueLength];
-    float imuShiftZ[imuQueLength];
+    std::vector<float> imuShiftX;
+    std::vector<float> imuShiftY;
+    std::vector<float> imuShiftZ;
 
-    float imuAngularVeloX[imuQueLength];
-    float imuAngularVeloY[imuQueLength];
-    float imuAngularVeloZ[imuQueLength];
+    std::vector<float> imuAngularVeloX;
+    std::vector<float> imuAngularVeloY;
+    std::vector<float> imuAngularVeloZ;
 
-    float imuAngularRotationX[imuQueLength];
-    float imuAngularRotationY[imuQueLength];
-    float imuAngularRotationZ[imuQueLength];
+    std::vector<float> imuAngularRotationX;
+    std::vector<float> imuAngularRotationY;
+    std::vector<float> imuAngularRotationZ;
 
 
 
@@ -269,16 +269,26 @@ public:
         imuAngularRotationXLast = 0; imuAngularRotationYLast = 0; imuAngularRotationZLast = 0;
         imuAngularFromStartX = 0; imuAngularFromStartY = 0; imuAngularFromStartZ = 0;
 
-        for (int i = 0; i < imuQueLength; ++i)
-        {
-            imuTime[i] = 0;
-            imuRoll[i] = 0; imuPitch[i] = 0; imuYaw[i] = 0;
-            imuAccX[i] = 0; imuAccY[i] = 0; imuAccZ[i] = 0;
-            imuVeloX[i] = 0; imuVeloY[i] = 0; imuVeloZ[i] = 0;
-            imuShiftX[i] = 0; imuShiftY[i] = 0; imuShiftZ[i] = 0;
-            imuAngularVeloX[i] = 0; imuAngularVeloY[i] = 0; imuAngularVeloZ[i] = 0;
-            imuAngularRotationX[i] = 0; imuAngularRotationY[i] = 0; imuAngularRotationZ[i] = 0;
-        }
+        // Resize vectors to imuQueLength and initialize to zero
+        imuTime.resize(imuQueLength, 0.0);
+        imuRoll.resize(imuQueLength, 0.0);
+        imuPitch.resize(imuQueLength, 0.0);
+        imuYaw.resize(imuQueLength, 0.0);
+        imuAccX.resize(imuQueLength, 0.0);
+        imuAccY.resize(imuQueLength, 0.0);
+        imuAccZ.resize(imuQueLength, 0.0);
+        imuVeloX.resize(imuQueLength, 0.0);
+        imuVeloY.resize(imuQueLength, 0.0);
+        imuVeloZ.resize(imuQueLength, 0.0);
+        imuShiftX.resize(imuQueLength, 0.0);
+        imuShiftY.resize(imuQueLength, 0.0);
+        imuShiftZ.resize(imuQueLength, 0.0);
+        imuAngularVeloX.resize(imuQueLength, 0.0);
+        imuAngularVeloY.resize(imuQueLength, 0.0);
+        imuAngularVeloZ.resize(imuQueLength, 0.0);
+        imuAngularRotationX.resize(imuQueLength, 0.0);
+        imuAngularRotationY.resize(imuQueLength, 0.0);
+        imuAngularRotationZ.resize(imuQueLength, 0.0);
 
 
         skipFrameNum = 1;
@@ -1866,6 +1876,20 @@ public:
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "lego_loam");
+    
+    ros::NodeHandle nh("~");
+    string configFile;
+    nh.param<string>("config_file", configFile, "");
+    
+    if (configFile.empty()) {
+        ROS_ERROR("No config_file parameter specified! Please provide a LiDAR configuration file.");
+        return -1;
+    }
+    
+    if (!loadLidarConfig(configFile)) {
+        ROS_ERROR("Failed to load LiDAR configuration from: %s", configFile.c_str());
+        return -1;
+    }
 
     ROS_INFO("\033[1;32m---->\033[0m Feature Association Started.");
 

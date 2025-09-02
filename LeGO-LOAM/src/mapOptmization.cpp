@@ -181,9 +181,9 @@ private:
     int imuPointerFront;
     int imuPointerLast;
 
-    double imuTime[imuQueLength];
-    float imuRoll[imuQueLength];
-    float imuPitch[imuQueLength];
+    std::vector<double> imuTime;
+    std::vector<float> imuRoll;
+    std::vector<float> imuPitch;
 
     std::mutex mtx;
 
@@ -338,11 +338,10 @@ public:
         imuPointerFront = 0;
         imuPointerLast = -1;
 
-        for (int i = 0; i < imuQueLength; ++i){
-            imuTime[i] = 0;
-            imuRoll[i] = 0;
-            imuPitch[i] = 0;
-        }
+        // Resize vectors to imuQueLength and initialize to zero
+        imuTime.resize(imuQueLength, 0.0);
+        imuRoll.resize(imuQueLength, 0.0);
+        imuPitch.resize(imuQueLength, 0.0);
 
         gtsam::Vector Vector6(6);
         Vector6 << 1e-6, 1e-6, 1e-6, 1e-8, 1e-8, 1e-6;
@@ -1526,6 +1525,20 @@ public:
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "lego_loam");
+    
+    ros::NodeHandle nh("~");
+    string configFile;
+    nh.param<string>("config_file", configFile, "");
+    
+    if (configFile.empty()) {
+        ROS_ERROR("No config_file parameter specified! Please provide a LiDAR configuration file.");
+        return -1;
+    }
+    
+    if (!loadLidarConfig(configFile)) {
+        ROS_ERROR("Failed to load LiDAR configuration from: %s", configFile.c_str());
+        return -1;
+    }
 
     ROS_INFO("\033[1;32m---->\033[0m Map Optimization Started.");
 
