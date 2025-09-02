@@ -12,6 +12,7 @@ services:
       - NVIDIA_DRIVER_CAPABILITIES=all
       - QT_X11_NO_MITSHM=1
       - XAUTHORITY=/tmp/.docker.xauth
+      - LIDAR_CONFIG=${LIDAR_CONFIG:-lslidar_c32w}
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - /tmp/.docker.xauth:/tmp/.docker.xauth:rw
@@ -22,5 +23,5 @@ services:
       bash -c "
         source /opt/ros/noetic/setup.bash &&
         source /catkin_ws/devel/setup.bash &&
-        roslaunch lego_loam run.launch
+        roslaunch lego_loam run.launch lidar_config:=$${LIDAR_CONFIG}
       "

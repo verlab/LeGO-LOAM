@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     libpcl-dev \
     libeigen3-dev \
     libboost-all-dev \
+    libyaml-cpp-dev \
     ros-noetic-pcl-ros \
     ros-noetic-pcl-conversions \
     ros-noetic-tf \
