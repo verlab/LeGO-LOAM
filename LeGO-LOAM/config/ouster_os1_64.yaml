@@ -1,0 +1,39 @@
+# Ouster OS1-64 LiDAR Configuration
+# Ouster OS1-64 specifications
+
+# LiDAR model name
+model: "Ouster OS1-64"
+
+# Point cloud and IMU topic configuration
+topics:
+  point_cloud: "/ouster/points"
+  imu: "/ouster/imu"
+
+# Scan configuration
+scan:
+  N_SCAN: 64                    # Number of scan lines
+  Horizon_SCAN: 1024           # Number of points per scan line
+  ang_res_x: 0.352             # Horizontal angular resolution (360°/1024)
+  ang_res_y: 0.527             # Vertical angular resolution (33.2°/63 intervals)
+  ang_bottom: 16.7             # Bottom beam angle offset (degrees)
+  groundScanInd: 15            # Ground scan index for ground detection
+
+# Ring channel configuration
+useCloudRing: true             # Ouster has "ring" or "r" channel
+
+# File output configuration
+fileDirectory: "/tmp/"         # Directory for saving PCD files
+
+# Sensor mounting configuration
+sensorMountAngle: 0.0          # Sensor mount angle (degrees)
+sensorMinimumRange: 1.0        # Minimum sensor range (meters)
+
+# Processing parameters
+scanPeriod: 0.1                # Scan period (seconds)
+systemDelay: 0                 # System delay compensation
+imuQueLength: 200              # IMU queue length for processing
+
+# Special notes for Ouster
+# - May need to uncomment line 159 in imageProjection.cpp
+# - Usage of Ouster IMU data is not fully supported (LeGO-LOAM needs 9-DOF IMU)
+# - Recommend publishing only point cloud data

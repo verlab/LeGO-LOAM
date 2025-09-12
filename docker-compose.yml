@@ -1,0 +1,27 @@
+services:
+  lego-loam:
+    build: .
+    container_name: lego-loam
+    network_mode: host
+    runtime: nvidia
+    environment:
+      - ROS_MASTER_URI=http://dell:11311
+      - ROS_HOSTNAME=dell
+      - DISPLAY=${DISPLAY}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - QT_X11_NO_MITSHM=1
+      - XAUTHORITY=/tmp/.docker.xauth
+      - LIDAR_CONFIG=${LIDAR_CONFIG:-lslidar_c32w}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - /tmp/.docker.xauth:/tmp/.docker.xauth:rw
+      - .:/catkin_ws/src
+    devices:
+      - /dev/dri:/dev/dri
+    command: >
+      bash -c "
+        source /opt/ros/noetic/setup.bash &&
+        source /catkin_ws/devel/setup.bash &&
+        roslaunch lego_loam run.launch lidar_config:=$${LIDAR_CONFIG}
+      "
